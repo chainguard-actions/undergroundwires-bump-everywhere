@@ -1,0 +1,57 @@
+name: Publish
+
+on:
+ release:
+   types: [created] # will be triggered when a NON-draft release is created and published.
+
+permissions: {}
+
+jobs:
+  publish-npm:
+    name: Publish to npm registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+        with:
+          ref: master # otherwise it defaults to the version tag missing bump commit
+          fetch-depth: 0 # fetch all history
+      - name: Checkout to bump commit
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: git checkout "$(git rev-list "$TAG_NAME"..master | tail -1)"
+      - uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
+        with:
+          node-version: 14.x
+          registry-url: https://registry.npmjs.org/
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-docker:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+        with:
+          ref: master # otherwise it defaults to the version tag missing bump commit
+          fetch-depth: 0 # fetch all history
+      - name: Checkout to bump commit
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: git checkout "$(git rev-list "$TAG_NAME"..master | tail -1)"
+      - uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
+        with:
+          node-version: 14.x
+          registry-url: https://registry.npmjs.org/
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@3e7a4f6646880c6f63758d73ac32392d323eaf8f # v1
+        with:
+          username: undergroundwires
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: undergroundwires/bump-everywhere
+          tag_with_ref: true
+          tags: latest

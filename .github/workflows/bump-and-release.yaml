@@ -1,0 +1,24 @@
+name: Bump & release
+
+on:
+  push: # Ensure a new release is created for each new tag
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions: {}
+
+jobs:
+
+  bump-version-and-release:
+    name: Bump version & release
+    if: github.event.base_ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - 
+        uses: undergroundwires/bump-everywhere@5b25459619298d93b61472550ee5ef1230ecac93 # master
+        with:
+          user: undergroundwires-bot
+          release-token: ${{ secrets.BUMP_GITHUB_PAT }} # Does not trigger release pipeline if we use default token: https://github.community/t5/GitHub-Actions/Github-Action-trigger-on-release-not-working-if-releases-was/td-p/34559
+                                                        # GitHub does not inject secrets if pipeline runs from fork or a fork is merged to main repo. 

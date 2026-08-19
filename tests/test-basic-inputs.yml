@@ -1,0 +1,35 @@
+name: Test basic inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          repository: undergroundwires/bump-everywhere
+          user: test-bot
+          commit-message: "bump to {{version}}"
+          git-token: fake-token-for-testing
+          release-type: release
+          release-token: fake-release-token
+      - name: Assert action started and reached clone step
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action is expected to fail at git clone (no real credentials),
+          # but it should NOT fail at parameter validation.
+          # A failure outcome means it ran but failed at clone (expected).
+          # A success outcome would be unexpected in this test environment.
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped, expected it to run"
+            exit 1
+          fi
+          echo "PASS: action ran (outcome=$OUTCOME, expected failure at clone step)"

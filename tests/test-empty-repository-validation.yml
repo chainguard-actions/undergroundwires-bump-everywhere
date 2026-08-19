@@ -1,0 +1,29 @@
+name: Test empty repository parameter validation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run action with empty repository (expect failure)
+        id: action
+        uses: .
+        with:
+          repository: ""
+          user: test-user
+          git-token: ${{ github.token }}
+          release-token: ${{ github.token }}
+          release-type: release
+          commit-message: "bump to {{version}}"
+        continue-on-error: true
+      - name: Assert action failed on empty repository
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail for empty repository, but got outcome: $OUTCOME"
+            exit 1
+          fi
+          echo "PASS: action correctly failed for empty repository parameter"
