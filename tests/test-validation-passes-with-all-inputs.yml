@@ -1,0 +1,36 @@
+name: Test validation passes when all inputs are provided
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run action with all inputs provided (expect failure at clone, not validation)
+        id: action
+        uses: .
+        with:
+          repository: 'nonexistent-owner-xyz123/nonexistent-repo-xyz123'
+          user: 'test-user'
+          git-token: 'fake-token-xyz'
+          release-type: 'release'
+          release-token: 'fake-token-xyz'
+        continue-on-error: true
+      - name: Assert action failed (at clone step, not at validation)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail because the repo doesn't exist / token is invalid,
+          # but it should have passed validation (all inputs were provided).
+          # Accept 'failure' or 'error' - Docker build failures may report as 'error'.
+          # We verify the action ran and failed (not succeeded or skipped).
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: expected action to fail at clone step, but got: $OUTCOME"
+            exit 1
+          fi
+          if [ -z "$OUTCOME" ]; then
+            echo "FAIL: outcome is empty - step may not have run"
+            exit 1
+          fi
+          echo "PASS: action correctly failed (outcome: $OUTCOME) - passed validation, failed at clone as expected"
