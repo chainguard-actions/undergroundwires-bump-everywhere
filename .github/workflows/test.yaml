@@ -1,0 +1,20 @@
+name: Test
+
+on: [ push ]
+
+permissions: {}
+
+jobs:
+
+  build-docker:
+    name: Build docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+      -
+        name: Build docker
+        run: docker build . --tag bump-everywhere
