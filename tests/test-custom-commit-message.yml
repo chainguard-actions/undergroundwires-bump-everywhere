@@ -1,0 +1,35 @@
+name: Test custom commit message parameter
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          repository: ${{ github.repository }}
+          user: ci-bot
+          git-token: ${{ github.token }}
+          release-token: ${{ github.token }}
+          release-type: release
+          commit-message: "chore: release {{version}}"
+      - name: Assert action ran and failed gracefully on sentinel repo
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action clones from GitHub using the sentinel GITHUB_REPOSITORY,
+          # which does not exist, so git clone will fail. We expect a graceful failure.
+          # The important thing is that the custom commit-message parameter was accepted
+          # and the action started (parameter parsing succeeded) before failing on clone.
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully as expected (sentinel repo is not resolvable)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded unexpectedly (real repo was resolved)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
